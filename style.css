@@ -72,6 +72,7 @@ h1 {
   border-radius: 18px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   padding: 18px 10px;
+  touch-action: none; /* evita scroll/zoom durante arrasto */
 }
 .cell {
   width: var(--cell-size);
@@ -84,6 +85,7 @@ h1 {
   border-radius: 10px;
   cursor: pointer;
   user-select: none;
+  touch-action: none; /* melhora resposta em dispositivos móveis */
   font-size: 1.2em;
   font-weight: 700;
   color: #009688;
