@@ -25,6 +25,8 @@ let gridData = [];
 let selecionadas = [];
 let palavrasEncontradas = [];
 let arrastando = false;
+let activePointerId = null;
+let anchor = null; // suporte a tap-tap: primeira célula como âncora
 let listenersBound = false;
 
 function tentarConstruirGrid(palavras){
@@ -72,6 +74,37 @@ function tentarConstruirGrid(palavras){
   return tmp;
 }
 
+function palavraExisteNoGrid(grid, palavra){
+  const n = grid.length;
+  const m = grid[0].length;
+  const L = palavra.length;
+  // horizontal left->right
+  for(let y=0;y<n;y++){
+    for(let x=0;x<=m-L;x++){
+      let ok = true;
+      for(let i=0;i<L;i++){
+        if(grid[y][x+i] !== palavra[i]){ ok = false; break; }
+      }
+      if(ok) return true;
+    }
+  }
+  // vertical top->down
+  for(let x=0;x<m;x++){
+    for(let y=0;y<=n-L;y++){
+      let ok = true;
+      for(let i=0;i<L;i++){
+        if(grid[y+i][x] !== palavra[i]){ ok = false; break; }
+      }
+      if(ok) return true;
+    }
+  }
+  return false;
+}
+
+function validarTodasPalavras(grid, palavras){
+  return palavras.every(p => palavraExisteNoGrid(grid, p));
+}
+
 function renderizarGrid(){
   gridEl.innerHTML = "";
   selecionadas = [];
@@ -89,15 +122,15 @@ function renderizarGrid(){
       cell.textContent = gridData[y][x];
       cell.dataset.x = x;
       cell.dataset.y = y;
-      // Eventos de seleção por arrasto com Pointer Events (funciona para mouse e touch)
+      // Eventos de seleção por arrasto com Pointer Events (mouse e touch)
       cell.addEventListener("pointerdown", iniciarSelecao);
-      cell.addEventListener("pointerenter", continuarSelecao);
       gridEl.appendChild(cell);
     }
   }
   // Eventos globais: bind apenas uma vez
   if(!listenersBound){
     document.addEventListener("pointerup", finalizarSelecao);
+    document.addEventListener("pointermove", continuarSelecaoGlobal);
     document.addEventListener("keydown", (e) => {
       if(e.key === 'Escape') limparSelecaoTemporaria();
       if((e.key === 'Enter' || e.key === ' ') && selecionadas.length > 1) validarSelecao();
@@ -113,27 +146,25 @@ function gerarGrade(palavras){
   const palavrasUpper = palavras.map(p=>p.toUpperCase());
   // basear o tamanho da grade no maior tamanho de palavra (com folga)
   const maior = Math.max(...palavrasUpper.map(p=>p.length));
-  const base = Math.max(12, maior + 1);
+  let base = Math.max(12, maior + 1);
   let sucesso = false;
-  for(let size = base; size <= base + 6 && !sucesso; size++){
-    gridSize = size;
-    const tentativa = tentarConstruirGrid(palavrasUpper);
-    if(tentativa){
-      gridData = tentativa;
-      sucesso = true;
+  let tentativaGrid = null;
+  // Tenta múltiplas vezes por tamanho e cresce se falhar
+  for(let incremento = 0; incremento <= 10 && !sucesso; incremento++){
+    gridSize = base + incremento;
+    for(let tentativa=0; tentativa<25 && !sucesso; tentativa++){
+      tentativaGrid = tentarConstruirGrid(palavrasUpper);
+      if(tentativaGrid && validarTodasPalavras(tentativaGrid, palavrasUpper)){
+        sucesso = true;
+        gridData = tentativaGrid;
+      }
     }
   }
   if(!sucesso){
-    // como fallback, usa uma grade maior
-    gridSize = base + 8;
-    const tentativa = tentarConstruirGrid(palavrasUpper);
-    if(tentativa){
-      gridData = tentativa;
-    } else {
-      console.warn("Falha ao montar a grade mesmo com expansão");
-      // ainda assim segue com grid vazia para não travar
-      gridData = Array.from({length: gridSize}, () => Array(gridSize).fill(""));
-    }
+    console.warn("Falha ao montar uma grade válida após várias tentativas; usando grade maior.");
+    gridSize = base + 12;
+    tentativaGrid = tentarConstruirGrid(palavrasUpper) || Array.from({length: gridSize}, () => Array(gridSize).fill(""));
+    gridData = tentativaGrid;
   }
   wordsEl.innerHTML = `<b>Fase ${faseAtual+1}: ${fases[faseAtual].tema}</b><br>Palavras: ${palavras.join(", ")}`;
   renderizarGrid();
@@ -152,28 +183,65 @@ function marcarCelula(cell){
 
 function iniciarSelecao(e){
   e.preventDefault();
+  const cell = e.target;
+  if(!cell || !cell.classList.contains('cell')) return;
+  const x = parseInt(cell.dataset.x);
+  const y = parseInt(cell.dataset.y);
+  const id = `${x},${y}`;
+  // Se já existe âncora e o usuário tocou/clicou em outra célula alinhada, monta caminho direto (tap-tap)
+  if(anchor && anchor !== id){
+    const [ax, ay] = anchor.split(',').map(Number);
+    const path = buildPathBetween(ax, ay, x, y);
+    if(path.length > 1){
+      // limpar seleção temporária e aplicar nova
+      Array.from(gridEl.children).forEach(c => c.classList.remove('selected'));
+      selecionadas = path;
+      path.forEach(pid => {
+        const [px, py] = pid.split(',').map(Number);
+        const idx = py*gridSize + px;
+        gridEl.children[idx].classList.add('selected');
+      });
+      anchor = null;
+      validarSelecao();
+      return;
+    }
+  }
+  // Arrastar normal: define âncora e inicia seleção
   arrastando = true;
-  // limpar seleção anterior
+  activePointerId = e.pointerId || 1;
+  try { e.target.setPointerCapture && e.target.setPointerCapture(activePointerId); } catch {}
+  anchor = id;
   selecionadas = [];
   Array.from(gridEl.children).forEach(c => c.classList.remove('selected'));
-  marcarCelula(e.target);
+  marcarCelula(cell);
 }
 
-function continuarSelecao(e){
+function continuarSelecaoGlobal(e){
   if(!arrastando) return;
+  if(activePointerId && e.pointerId && e.pointerId !== activePointerId) return;
   e.preventDefault();
-  marcarCelula(e.target);
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if(el && el.classList && el.classList.contains('cell')){
+    marcarCelula(el);
+  }
 }
 
 function finalizarSelecao(){
   if(!arrastando) return;
   arrastando = false;
+  activePointerId = null;
+  // se só uma célula foi selecionada, mantemos como âncora para o próximo toque
+  if(selecionadas.length < 2){
+    // mantém visual de seleção da âncora
+    return;
+  }
+  anchor = null;
   validarSelecao();
 }
 
 function validarSelecao(){
   // Sem seleção suficiente
-  if(selecionadas.length < 2){ limparSelecaoTemporaria(); return; }
+  if(selecionadas.length < 2){ return; }
   const coords = selecionadas.map(s => s.split(',').map(Number));
   const xs = coords.map(c=>c[0]);
   const ys = coords.map(c=>c[1]);
@@ -193,7 +261,7 @@ function validarSelecao(){
     for(let x=minX;x<=maxX;x++){ palavra += gridData[row][x]; pathIds.push(`${x},${row}`); }
   } else {
     feedbackEl && (feedbackEl.textContent = 'Selecione em linha reta.');
-    limparSelecaoTemporaria();
+    // não limpa âncora aqui para permitir novo toque
     return;
   }
   const palavraUp = palavra.toUpperCase();
@@ -211,8 +279,24 @@ function validarSelecao(){
     atualizarProgresso();
   } else {
     feedbackEl && (feedbackEl.textContent = 'Tente novamente.');
+    // mantém âncora limpa pois houve tentativa inválida
+    anchor = null;
     limparSelecaoTemporaria();
   }
+}
+
+function buildPathBetween(ax, ay, bx, by){
+  const path = [];
+  if(ax === bx){
+    const minY = Math.min(ay, by);
+    const maxY = Math.max(ay, by);
+    for(let y=minY;y<=maxY;y++) path.push(`${ax},${y}`);
+  } else if(ay === by){
+    const minX = Math.min(ax, bx);
+    const maxX = Math.max(ax, bx);
+    for(let x=minX;x<=maxX;x++) path.push(`${x},${ay}`);
+  }
+  return path;
 }
 
 function destacarSelecionadasComoFound(){
