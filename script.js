@@ -1,15 +1,25 @@
 console.log("Script carregado");
 const fases = [
-  {tema: "Avaliação de Produtos", palavras: ["CLAREZA","FUNCIONALIDADE","USUARIO","CONSISTENCIA"]},
-  {tema: "Familiaridade", palavras: ["LIXEIRA","BUSCAR","FECHAR"]},
-  {tema: "Visibilidade", palavras: ["BOTOES","MENUS","ACESSO"]},
-  {tema: "Consistência", palavras: ["PADROES","IDENTIDADE","LAYOUT"]},
-  {tema: "Intuição", palavras: ["BOTAO","CLICAR","ALAVANCA"]},
-  {tema: "Cores", palavras: ["VERDE","VERMELHO","AZUL","AMARELO"]},
-  {tema: "Duolingo", palavras: ["CORES","MOTIVACAO","ICONE"]},
-  {tema: "Netflix", palavras: ["LAYOUT","SERIES","FILMES","SINOPSE"]},
-  {tema: "ClickJogos", palavras: ["USABILIDADE","PROBLEMA","INCONSISTENCIA"]},
-  {tema: "Steam", palavras: ["NAVEGACAO","CAPAS","COMUNIDADE","SOCIAL"]},
+{tema: "Avaliação de Produtos", palavras: ["CLAREZA","FUNCIONALIDADE","USUARIO","CONSISTENCIA"]},
+{tema: "Familiaridade", palavras: ["LIXEIRA","BUSCAR","FECHAR"]},
+{tema: "Visibilidade", palavras: ["BOTOES","MENUS","ACESSO"]},
+{tema: "Consistência", palavras: ["PADROES","IDENTIDADE","LAYOUT"]},
+{tema: "Intuição", palavras: ["BOTAO","CLICAR","ALAVANCA"]},
+{tema: "Cores", palavras: ["VERDE","VERMELHO","AZUL","AMARELO"]},
+{tema: "Duolingo", palavras: ["CORES","MOTIVACAO","ICONE"]},
+{tema: "Netflix", palavras: ["LAYOUT","SERIES","FILMES","SINOPSE"]},
+{tema: "ClickJogos", palavras: ["USABILIDADE","PROBLEMA","INCONSISTENCIA"]},
+{tema: "Steam", palavras: ["NAVEGACAO","CAPAS","COMUNIDADE","SOCIAL"]},
+{tema: "YouTube", palavras: ["VIDEO","PLAYER","ASSINAR","LIKE"]},
+{tema: "Instagram", palavras: ["FOTOS","STORIES","REELS","SEGUIDORES"]},
+{tema: "Spotify", palavras: ["PLAYLIST","MUSICA","ARTISTA","ALBUM"]},
+{tema: "Google Maps", palavras: ["MAPA","ROTAS","TRAJETO","LOCAL"]},
+{tema: "WhatsApp", palavras: ["MENSAGEM","GRUPO","STATUS","CHAMADA"]},
+{tema: "Twitter", palavras: ["POST","HASHTAG","FEED","TRENDING"]},
+{tema: "LinkedIn", palavras: ["REDE","TRABALHO","CONEXOES","CURRICULO"]},
+{tema: "Facebook", palavras: ["AMIGOS","CURTIR","COMENTAR","COMPARTILHAR"]},
+{tema: "TikTok", palavras: ["DANCA","VIDEO","EFEITOS","TREND"]},
+{tema: "Google", palavras: ["BUSCA","RESULTADO","PESQUISA","LINK"]}
 ];
 
 let faseAtual = 0;
@@ -362,3 +372,4 @@ btnNext.addEventListener("click", () => {
 });
 
 iniciarFase();
+
